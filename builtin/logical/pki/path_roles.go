@@ -91,6 +91,14 @@ can include glob patterns, e.g. "ftp*.example.com". See
 the documentation for more information.`,
 			},
 
+			"allow_spiffe_name": &framework.FieldSchema{
+				Type:    framework.TypeBool,
+				Default: false,
+				Description: `If set, domains specified in "common_name" or
+"alt_names" can be SPIFFE domains, e.g. "spiffe://some.example.com". See the
+documentation for more information.`,
+			},
+
 			"allow_any_name": &framework.FieldSchema{
 				Type:    framework.TypeBool,
 				Default: false,
@@ -394,6 +402,7 @@ func (b *backend) pathRoleCreate(ctx context.Context, req *logical.Request, data
 		AllowBareDomains:    data.Get("allow_bare_domains").(bool),
 		AllowSubdomains:     data.Get("allow_subdomains").(bool),
 		AllowGlobDomains:    data.Get("allow_glob_domains").(bool),
+		AllowSpiffeName:     data.Get("allow_spiffe_name").(bool),
 		AllowAnyName:        data.Get("allow_any_name").(bool),
 		EnforceHostnames:    data.Get("enforce_hostnames").(bool),
 		AllowIPSANs:         data.Get("allow_ip_sans").(bool),
@@ -520,6 +529,7 @@ type roleEntry struct {
 	AllowTokenDisplayName bool     `json:"allow_token_displayname" mapstructure:"allow_token_displayname"`
 	AllowSubdomains       bool     `json:"allow_subdomains" mapstructure:"allow_subdomains"`
 	AllowGlobDomains      bool     `json:"allow_glob_domains" mapstructure:"allow_glob_domains"`
+	AllowSpiffeName       bool     `json:"allow_spiffe_name" mapstructure:"allow_spiffe_name"`
 	AllowAnyName          bool     `json:"allow_any_name" mapstructure:"allow_any_name"`
 	EnforceHostnames      bool     `json:"enforce_hostnames" mapstructure:"enforce_hostnames"`
 	AllowIPSANs           bool     `json:"allow_ip_sans" mapstructure:"allow_ip_sans"`
@@ -555,6 +565,7 @@ func (r *roleEntry) ToResponseData() map[string]interface{} {
 		"allow_token_displayname": r.AllowTokenDisplayName,
 		"allow_subdomains":        r.AllowSubdomains,
 		"allow_glob_domains":      r.AllowGlobDomains,
+		"allow_spiffe_name":       r.AllowSpiffeName,
 		"allow_any_name":          r.AllowAnyName,
 		"enforce_hostnames":       r.EnforceHostnames,
 		"allow_ip_sans":           r.AllowIPSANs,

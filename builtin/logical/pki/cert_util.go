@@ -15,6 +15,7 @@ import (
 	"encoding/pem"
 	"fmt"
 	"net"
+	"net/url"
 	"regexp"
 	"strings"
 	"time"
@@ -92,6 +93,7 @@ func (b *caInfoBundle) GetCAChain() []*certutil.CertBlock {
 
 var (
 	hostnameRegex                = regexp.MustCompile(`^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$`)
+	spiffeRegex                  = regexp.MustCompile(`^spiffe://(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])[.\/])*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])/?$`)
 	oidExtensionBasicConstraints = []int{2, 5, 29, 19}
 )
 
@@ -298,7 +300,14 @@ func validateNames(req *logical.Request, names []string, role *roleEntry) string
 		// wildcard prefix.
 		if role.EnforceHostnames {
 			if !hostnameRegex.MatchString(sanitizedName) {
-				return name
+				// OK to fail the hostnameRegex check if row.AllowSpiffeName
+				// and if sanitizedName is a SPIFFE URI
+				if role.AllowSpiffeName {
+					if !spiffeRegex.MatchString(sanitizedName) {
+						return name
+					}
+					// Keep going without erroring out
+				}
 			}
 		}
 
@@ -398,6 +407,19 @@ func validateNames(req *logical.Request, names []string, role *roleEntry) string
 						(isWildcard && sanitizedName == currDomain) {
 						valid = true
 						break
+					} else {
+						if role.AllowSpiffeName {
+							parsed, err := url.Parse(name)
+							if err != nil {
+								// Do something with err?
+								return name
+							}
+							if strings.HasSuffix(parsed.Host, "."+currDomain) ||
+								(isWildcard && sanitizedName == currDomain) {
+								valid = true
+								break
+							}
+						}
 					}
 				}
 
